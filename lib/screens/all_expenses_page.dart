@@ -1,49 +1,35 @@
 import 'package:flutter/material.dart';
-import 'add_expense_page.dart';
-import 'all_expenses_page.dart';
 import '../models/expense.dart';
 
-class ExpensesHomePage extends StatefulWidget {
-  const ExpensesHomePage({super.key});
+class AllExpensesPage extends StatefulWidget {
+  final List<Expense> expenses;
+  final Function(Expense) onEdit;
+  final Function(String) onDelete;
+
+  const AllExpensesPage({
+    super.key,
+    required this.expenses,
+    required this.onEdit,
+    required this.onDelete,
+  });
 
   @override
-  State<ExpensesHomePage> createState() => _ExpensesHomePageState();
+  State<AllExpensesPage> createState() => _AllExpensesPageState();
 }
 
-class _ExpensesHomePageState extends State<ExpensesHomePage> {
-  List<Expense> _expenses = [
-    Expense(
-      id: '1', 
-      title: 'Lunch at Jollibee', 
-      amount: 185.00,
-      category: 'Food',
-      date: DateTime.now(),
-    ),
-    Expense(
-      id: '2', 
-      title: 'Grab ride to work', 
-      amount: 95.00,
-      category: 'Transport',
-      date: DateTime.now().subtract(const Duration(days: 1)),
-    ),
-    Expense(
-      id: '3', 
-      title: 'Netflix subscription', 
-      amount: 549.00,
-      category: 'Entertainment',
-      date: DateTime.now().subtract(const Duration(days: 2)),
-    ),
-    Expense(
-      id: '4', 
-      title: 'Groceries', 
-      amount: 1200.00,
-      category: 'Shopping',
-      date: DateTime.now().subtract(const Duration(days: 3)),
-    ),
-  ];
+class _AllExpensesPageState extends State<AllExpensesPage> {
+  String _selectedFilter = 'All';
+  final List<String> _filters = ['All', 'Food', 'Transport', 'Entertainment', 'Shopping', 'Others'];
 
-  double get _totalSpent {
-    return _expenses.fold(0, (sum, item) => sum + item.amount);
+  List<Expense> get _filteredExpenses {
+    if (_selectedFilter == 'All') {
+      return widget.expenses;
+    }
+    return widget.expenses.where((e) => e.category == _selectedFilter).toList();
+  }
+
+  double get _totalFilteredAmount {
+    return _filteredExpenses.fold(0, (sum, item) => sum + item.amount);
   }
 
   String _getDayLabel(DateTime date) {
@@ -58,6 +44,36 @@ class _ExpensesHomePageState extends State<ExpensesHomePage> {
     } else {
       const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
       return weekdays[date.weekday - 1];
+    }
+  }
+
+  Color _getCategoryColor(String category) {
+    switch (category) {
+      case 'Food':
+        return const Color(0xFFE67E22);
+      case 'Transport':
+        return const Color(0xFF27AE60);
+      case 'Entertainment':
+        return const Color(0xFF9B59B6);
+      case 'Shopping':
+        return const Color(0xFFE91E63);
+      default:
+        return const Color(0xFF3498DB);
+    }
+  }
+
+  IconData _getCategoryIcon(String category) {
+    switch (category) {
+      case 'Food':
+        return Icons.fastfood;
+      case 'Transport':
+        return Icons.directions_car;
+      case 'Entertainment':
+        return Icons.movie;
+      case 'Shopping':
+        return Icons.shopping_cart;
+      default:
+        return Icons.receipt;
     }
   }
 
@@ -207,7 +223,7 @@ class _ExpensesHomePageState extends State<ExpensesHomePage> {
                     child: ElevatedButton(
                       onPressed: () {
                         Navigator.pop(context);
-                        _navigateToEditExpense(expense);
+                        widget.onEdit(expense);
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFB0578D),
@@ -290,7 +306,7 @@ class _ExpensesHomePageState extends State<ExpensesHomePage> {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              _deleteExpense(expense.id);
+              widget.onDelete(expense.id);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red[100],
@@ -302,42 +318,6 @@ class _ExpensesHomePageState extends State<ExpensesHomePage> {
             child: const Text('Delete'),
           ),
         ],
-      ),
-    );
-  }
-
-  void _deleteExpense(String id) {
-    setState(() {
-      _expenses.removeWhere((expense) => expense.id == id);
-    });
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Expense deleted'),
-        backgroundColor: const Color(0xFFB0578D),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _navigateToAllExpenses() async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => AllExpensesPage(
-          expenses: _expenses,
-          onEdit: (expense) {
-            _navigateToEditExpense(expense);
-          },
-          onDelete: (id) {
-            setState(() {
-              _expenses.removeWhere((e) => e.id == id);
-            });
-          },
-        ),
       ),
     );
   }
@@ -359,182 +339,161 @@ class _ExpensesHomePageState extends State<ExpensesHomePage> {
         ),
         child: SafeArea(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'EXPENSE TRACKER',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF6B4E71),
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Mar 6, 2026',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.grey[800],
-                          ),
-                        ),
-                      ],
-                    ),
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.7),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        Icons.person_outline,
-                        color: const Color(0xFF6B4E71),
-                        size: 20,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
+              // Header
               Padding(
                 padding: const EdgeInsets.all(20),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        const Color(0xFFD988B9).withValues(alpha: 0.9),
-                        const Color(0xFFB0578D).withValues(alpha: 0.9),
-                        const Color(0xFF8E44AD).withValues(alpha: 0.9),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF8E44AD).withValues(alpha: 0.3),
-                        blurRadius: 12,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'TOTAL SPENT',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white70,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '₱${_totalSpent.toStringAsFixed(2)}',
-                        style: const TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              '${_expenses.length} expenses',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Colors.white,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: const Text(
-                              'This month',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.white,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
+                    IconButton(
+                      icon: Icon(Icons.arrow_back, color: const Color(0xFFB0578D)),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    const SizedBox(width: 8),
                     const Text(
-                      'Recent Activity',
+                      'All Expenses',
                       style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
                         color: Color(0xFF4A2C4A),
                       ),
                     ),
-                    GestureDetector(
-                      onTap: () => _navigateToAllExpenses(),
-                      child: Text(
-                        'See All',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: const Color(0xFF8E44AD),
-                          decoration: TextDecoration.underline,
-                        ),
-                      ),
-                    ),
                   ],
                 ),
               ),
 
+              // Filter Chips
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: _filters.map((filter) {
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: FilterChip(
+                          label: Text(filter),
+                          selected: _selectedFilter == filter,
+                          onSelected: (selected) {
+                            setState(() {
+                              _selectedFilter = filter;
+                            });
+                          },
+                          backgroundColor: Colors.white.withValues(alpha: 0.7),
+                          selectedColor: const Color(0xFFB0578D),
+                          labelStyle: TextStyle(
+                            color: _selectedFilter == filter 
+                                ? Colors.white 
+                                : const Color(0xFF4A2C4A),
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+
+              // Summary Card
+              if (_filteredExpenses.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.9),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${_filteredExpenses.length} expenses',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Color(0xFF4A2C4A),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _selectedFilter == 'All' 
+                                  ? 'All categories' 
+                                  : '$_selectedFilter only',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            const Text(
+                              'Total',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '₱${_totalFilteredAmount.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFFB0578D),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+              // Expenses List
               Expanded(
-                child: _expenses.isEmpty
-                    ? _buildEmptyState()
+                child: _filteredExpenses.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.receipt_long,
+                              size: 60,
+                              color: const Color(0xFFB0578D).withValues(alpha: 0.5),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No expenses found',
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Try a different filter',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[500],
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
                     : ListView.builder(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
-                        itemCount: _expenses.length,
+                        itemCount: _filteredExpenses.length,
                         itemBuilder: (context, index) {
-                          final expense = _expenses[index];
+                          final expense = _filteredExpenses[index];
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 12),
                             child: GestureDetector(
@@ -596,140 +555,10 @@ class _ExpensesHomePageState extends State<ExpensesHomePage> {
                         },
                       ),
               ),
-
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: ElevatedButton(
-                  onPressed: () => _navigateToAddExpense(),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFB0578D),
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(double.infinity, 56),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: const Text(
-                    '+ Add Expense',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
             ],
           ),
         ),
       ),
     );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.7),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.receipt_long,
-              size: 40,
-              color: const Color(0xFFB0578D),
-            ),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'No expenses yet',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF4A2C4A),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Tap the + button to add your first expense',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[700],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Color _getCategoryColor(String category) {
-    switch (category) {
-      case 'Food':
-        return const Color(0xFFE67E22);
-      case 'Transport':
-        return const Color(0xFF27AE60);
-      case 'Entertainment':
-        return const Color(0xFF9B59B6);
-      case 'Shopping':
-        return const Color(0xFFE91E63);
-      default:
-        return const Color(0xFF3498DB);
-    }
-  }
-
-  IconData _getCategoryIcon(String category) {
-    switch (category) {
-      case 'Food':
-        return Icons.fastfood;
-      case 'Transport':
-        return Icons.directions_car;
-      case 'Entertainment':
-        return Icons.movie;
-      case 'Shopping':
-        return Icons.shopping_cart;
-      default:
-        return Icons.receipt;
-    }
-  }
-
-  Future<void> _navigateToAddExpense() async {
-    final Expense? result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const AddExpensePage(),
-      ),
-    );
-
-    if (!mounted) return;
-
-    if (result != null) {
-      setState(() {
-        _expenses.add(result);
-      });
-    }
-  }
-
-  Future<void> _navigateToEditExpense(Expense expense) async {
-    final Expense? result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => AddExpensePage(expense: expense),
-      ),
-    );
-
-    if (!mounted) return;
-
-    if (result != null) {
-      setState(() {
-        final index = _expenses.indexWhere((e) => e.id == result.id);
-        if (index != -1) {
-          _expenses[index] = result;
-        }
-      });
-    }
   }
 }
