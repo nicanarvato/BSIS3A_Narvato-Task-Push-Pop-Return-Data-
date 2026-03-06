@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'screens/expenses_home_page.dart';  // Add this import
+import 'screens/expenses_home_page.dart'; // Import the home page
 
 void main() {
   runApp(const MyApp());
@@ -13,11 +13,11 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Expense Tracker',
       theme: ThemeData(
-        primarySwatch: Colors.blue,  // Fix: change 'primarySavings' to 'primarySwatch'
+        primarySwatch: Colors.blue,
         useMaterial3: true,
       ),
-      home: const ExpensesHomePage(),
-      debugShowCheckedModeBanner: false,  // Fix: change 'debugShowCheckedModeButton' to 'debugShowCheckedModeBanner'
+      home: const ExpensesHomePage(), // Changed from AddExpensePage to ExpensesHomePage
+      debugShowCheckedModeBanner: false,
     );
   }
 }

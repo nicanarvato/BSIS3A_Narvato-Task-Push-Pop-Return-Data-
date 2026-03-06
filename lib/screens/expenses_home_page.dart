@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'add_expense_page.dart';
+import '../models/expense.dart';
 
 class ExpensesHomePage extends StatefulWidget {
   const ExpensesHomePage({super.key});
@@ -9,47 +10,95 @@ class ExpensesHomePage extends StatefulWidget {
 }
 
 class _ExpensesHomePageState extends State<ExpensesHomePage> {
-  final List<Map<String, dynamic>> _expenses = []; // Store expense data
+  // This cannot be final because we modify it
+  List<Expense> _expenses = [
+    Expense(id: '1', title: 'Groceries', amount: 75.50),
+    Expense(id: '2', title: 'Electric Bill', amount: 120.00),
+    Expense(id: '3', title: 'Internet Subscription', amount: 45.99),
+  ];
+
+  Future<void> _navigateToAddExpense() async {
+    final Expense? result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const AddExpensePage(),
+      ),
+    );
+
+    if (!mounted) return;
+
+    if (result != null) {
+      setState(() {
+        _expenses.add(result);
+      });
+
+      _showSnackBar('Added: ${result.title}', Colors.green);
+    }
+  }
+
+  Future<void> _navigateToEditExpense(Expense expense) async {
+    final Expense? result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddExpensePage(expense: expense),
+      ),
+    );
+
+    if (!mounted) return;
+
+    if (result != null) {
+      setState(() {
+        final index = _expenses.indexWhere((e) => e.id == result.id);
+        if (index != -1) {
+          _expenses[index] = result;
+        }
+      });
+
+      _showSnackBar('Updated: ${result.title}', Colors.blue);
+    }
+  }
+
+  void _showSnackBar(String message, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+      ),
+    );
+  }
+
+  String _formatPeso(double amount) {
+    return '₱ ${amount.toStringAsFixed(2)}';
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50], // Neutral background color
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text(
-          'Expense Tracker',
-          style: TextStyle(fontWeight: FontWeight.w500),
-        ),
-        backgroundColor: Colors.grey[50], // Match background
-        elevation: 0, // Remove shadow
-        // Removed the plus icon from AppBar
+        title: const Text('Expense Tracker'),
+        backgroundColor: Colors.grey[50],
+        elevation: 0,
       ),
       body: _expenses.isEmpty
           ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.receipt_long,
-                    size: 80,
-                    color: Colors.grey[400],
-                  ),
+                  Icon(Icons.receipt_long, size: 80, color: Colors.grey[400]),
                   const SizedBox(height: 16),
-                  Text(
-                    'No expenses yet',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.grey[600],
-                      fontWeight: FontWeight.w500,
-                    ),
+                  const Text(
+                    'No expenses yet', 
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Tap the + button to add your first expense',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[500],
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                   ),
                 ],
               ),
@@ -76,35 +125,25 @@ class _ExpensesHomePageState extends State<ExpensesHomePage> {
                         color: Colors.blue[50],
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Icon(
-                        Icons.shopping_cart,
-                        color: Colors.blue[700],
-                        size: 24,
-                      ),
+                      child: Icon(Icons.receipt, color: Colors.blue[700]),
                     ),
                     title: Text(
-                      expense['title'],
+                      expense.title, 
                       style: const TextStyle(
-                        fontSize: 16,
                         fontWeight: FontWeight.w600,
+                        fontSize: 16,
                       ),
                     ),
-                    subtitle: Text(
-                      'Tap to view details',
+                    subtitle: const Text('Tap to edit'),
+                    trailing: Text(
+                      _formatPeso(expense.amount),
                       style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600],
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                        color: Colors.blue[700],
                       ),
                     ),
-                    trailing: Icon(
-                      Icons.arrow_forward_ios,
-                      size: 16,
-                      color: Colors.grey[400],
-                    ),
-                    onTap: () {
-                      // Show details when tapped
-                      _showExpenseDetails(expense['title']);
-                    },
+                    onTap: () => _navigateToEditExpense(expense),
                   ),
                 );
               },
@@ -112,54 +151,8 @@ class _ExpensesHomePageState extends State<ExpensesHomePage> {
       floatingActionButton: FloatingActionButton(
         onPressed: () => _navigateToAddExpense(),
         backgroundColor: Colors.blue[600],
-        child: const Icon(Icons.add, size: 28),
+        child: const Icon(Icons.add),
       ),
     );
-  }
-
-  // Method to show expense details
-  void _showExpenseDetails(String title) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: const Text('Expense details will be shown here'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _navigateToAddExpense() async {
-    final String? result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const AddExpensePage(),
-      ),
-    );
-
-    if (!mounted) return;
-
-    if (result != null && result.isNotEmpty) {
-      setState(() {
-        _expenses.add({'title': result, 'date': DateTime.now()});
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Added: $result'),
-          duration: const Duration(seconds: 2),
-          backgroundColor: Colors.green[700],
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
-    }
   }
 }
